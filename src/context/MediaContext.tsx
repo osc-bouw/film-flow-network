@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { Media, MediaType } from "../types/media";
 import { mediaData } from "../data/mediaData";
 import { toast } from "sonner";
@@ -15,14 +15,27 @@ interface MediaContextType {
   setWatchStatus: (status: 'all' | 'watched' | 'unwatched') => void;
   toggleWatched: (id: string) => void;
   updateRating: (id: string, rating: number) => void;
+  importMedia: (mediaItems: Media[]) => void;
 }
+
+const STORAGE_KEY = 'mediatracker-data';
 
 const MediaContext = createContext<MediaContextType | undefined>(undefined);
 
 export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [media, setMedia] = useState<Media[]>(mediaData);
+  const [media, setMedia] = useState<Media[]>(() => {
+    // Try to load from localStorage on initialization
+    const savedMedia = localStorage.getItem(STORAGE_KEY);
+    return savedMedia ? JSON.parse(savedMedia) : mediaData;
+  });
+  
   const [activeFilter, setActiveFilter] = useState<'all' | 'movies' | 'tvshows'>('all');
   const [watchStatus, setWatchStatus] = useState<'all' | 'watched' | 'unwatched'>('all');
+
+  // Save to localStorage whenever media changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(media));
+  }, [media]);
 
   const watchedMedia = media.filter(item => item.watched);
   const unwatchedMedia = media.filter(item => !item.watched);
@@ -69,6 +82,28 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
+  const importMedia = (mediaItems: Media[]) => {
+    // Validate imported media
+    const validatedMedia = mediaItems.filter(item => {
+      return (
+        item.id &&
+        item.title &&
+        (item.type === 'movie' || item.type === 'tvshow') &&
+        typeof item.year === 'number' &&
+        typeof item.watched === 'boolean' &&
+        item.description &&
+        Array.isArray(item.genres) &&
+        Array.isArray(item.relatedMedia)
+      );
+    });
+
+    if (validatedMedia.length !== mediaItems.length) {
+      toast.warning(`Filtered out ${mediaItems.length - validatedMedia.length} invalid items`);
+    }
+
+    setMedia(validatedMedia);
+  };
+
   return (
     <MediaContext.Provider 
       value={{ 
@@ -81,7 +116,8 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setActiveFilter,
         setWatchStatus,
         toggleWatched,
-        updateRating
+        updateRating,
+        importMedia
       }}
     >
       {children}

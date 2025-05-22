@@ -1,6 +1,7 @@
 
 import { Header } from "../components/Header";
 import { MediaGrid } from "../components/MediaGrid";
+import { MediaImportExport } from "../components/MediaImportExport";
 import { useMedia } from "../context/MediaContext";
 
 const HomePage = () => {
@@ -23,11 +24,15 @@ const HomePage = () => {
       <Header />
       
       <main className="flex-1 py-8 px-4 lg:px-8 container mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{getTitleText()}</h1>
-          <p className="text-muted-foreground">
-            {filteredMedia.length} {filteredMedia.length === 1 ? 'item' : 'items'}
-          </p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">{getTitleText()}</h1>
+            <p className="text-muted-foreground">
+              {filteredMedia.length} {filteredMedia.length === 1 ? 'item' : 'items'}
+            </p>
+          </div>
+          
+          <MediaImportExport />
         </div>
         
         <MediaGrid media={filteredMedia} />
