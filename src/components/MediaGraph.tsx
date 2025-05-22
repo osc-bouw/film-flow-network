@@ -5,14 +5,13 @@ import { mediaData } from "../data/mediaData";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 import { toast } from "sonner";
+import ForceGraph3D from "3d-force-graph";
 
 interface GraphNode {
   id: string;
   title: string;
   type: 'movie' | 'tvshow';
-  x: number;
-  y: number;
-  radius: number;
+  val: number; // Size of the node
 }
 
 interface GraphLink {
@@ -21,46 +20,40 @@ interface GraphLink {
 }
 
 export const MediaGraph = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [nodes, setNodes] = useState<GraphNode[]>([]);
-  const [links, setLinks] = useState<GraphLink[]>([]);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const navigate = useNavigate();
   
-  // Initialize graph data
+  // Initialize graph
   useEffect(() => {
-    const nodeRadius = 20;
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 3;
-    const radius = Math.min(window.innerWidth, window.innerHeight) / 3;
+    if (!containerRef.current) return;
     
-    // Create nodes
-    const graphNodes: GraphNode[] = mediaData.map((media, i) => {
-      const angle = (i / mediaData.length) * 2 * Math.PI;
-      return {
+    // Clear any existing graph
+    containerRef.current.innerHTML = '';
+    
+    // Prepare data for the 3D force graph
+    const graphData = {
+      nodes: mediaData.map(media => ({
         id: media.id,
         title: media.title,
         type: media.type,
-        x: centerX + radius * Math.cos(angle),
-        y: centerY + radius * Math.sin(angle),
-        radius: nodeRadius
-      };
-    });
+        val: 1, // Default size
+      })),
+      links: []
+    };
     
-    // Create links
-    const graphLinks: GraphLink[] = [];
+    // Create links between related media
     mediaData.forEach(media => {
       media.relatedMedia.forEach(relatedId => {
         // Avoid duplicate links
-        const existingLink = graphLinks.find(
+        const existingLink = graphData.links.find(
           link => 
             (link.source === media.id && link.target === relatedId) || 
             (link.source === relatedId && link.target === media.id)
         );
         
         if (!existingLink) {
-          graphLinks.push({
+          graphData.links.push({
             source: media.id,
             target: relatedId
           });
@@ -68,161 +61,98 @@ export const MediaGraph = () => {
       });
     });
     
-    setNodes(graphNodes);
-    setLinks(graphLinks);
+    // Initialize the 3D force graph
+    const Graph = ForceGraph3D()(containerRef.current)
+      .graphData(graphData)
+      .backgroundColor("#0a0b0f")
+      .nodeLabel(node => (node as GraphNode).title)
+      .nodeColor(node => {
+        const n = node as GraphNode;
+        return n.type === 'movie' ? '#6d28d9' : '#ec4899';
+      })
+      .nodeVal(node => (node as GraphNode).val * 10) // Size multiplier
+      .linkColor(() => '#6b7280')
+      .linkWidth(link => {
+        const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+        const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+        
+        if (
+          selectedNode && 
+          (selectedNode.id === sourceId || selectedNode.id === targetId)
+        ) {
+          return 2; // Thicker lines for selected node links
+        }
+        return 1;
+      })
+      .linkOpacity(0.5)
+      .onNodeClick(node => {
+        navigate(`/media/${node.id}`);
+      })
+      .onNodeHover(node => {
+        if (node) {
+          setSelectedNode(node as GraphNode);
+          
+          // Highlight connections
+          Graph.linkWidth(link => {
+            const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+            const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+            
+            if (node.id === sourceId || node.id === targetId) {
+              return 2;
+            }
+            return 1;
+          });
+          
+          Graph.linkColor(link => {
+            const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+            const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+            
+            if (node.id === sourceId || node.id === targetId) {
+              return '#ec4899'; // cinema-highlight
+            }
+            return '#6b7280'; // muted gray
+          });
+        } else {
+          setSelectedNode(null);
+          
+          // Reset links
+          Graph.linkWidth(1)
+            .linkColor('#6b7280');
+        }
+      });
     
-    toast("Hover over nodes to see connections, click to view details", {
+    // Custom node rendering
+    Graph.nodeThreeObject(node => {
+      const { title, type } = node as GraphNode;
+      
+      // Use the 3d-force-graph API to create a text sprite
+      const sprite = new window.SpriteText(title);
+      sprite.color = 'white';
+      sprite.textHeight = 2.5;
+      sprite.position.y = 5;
+      
+      return sprite;
+    });
+    
+    // Adjust initial camera distance
+    Graph.cameraPosition({ z: 200 });
+    
+    toast("Click on nodes to see details, drag to rotate the graph", {
       duration: 5000,
     });
-  }, []);
-  
-  // Draw the graph
-  useEffect(() => {
-    if (!canvasRef.current || nodes.length === 0) return;
     
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    // Resize canvas to full container size
-    const resizeCanvas = () => {
-      if (containerRef.current && canvas) {
-        canvas.width = containerRef.current.clientWidth;
-        canvas.height = containerRef.current.clientHeight;
-        drawGraph();
-      }
+    // Handle window resize
+    const handleResize = () => {
+      Graph.width(containerRef.current?.clientWidth || window.innerWidth)
+          .height(containerRef.current?.clientHeight || window.innerHeight);
     };
     
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-    
-    // Function to draw the graph
-    function drawGraph() {
-      if (!ctx) return;
-      
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Draw links
-      links.forEach(link => {
-        const sourceNode = nodes.find(n => n.id === link.source);
-        const targetNode = nodes.find(n => n.id === link.target);
-        
-        if (sourceNode && targetNode) {
-          ctx.beginPath();
-          ctx.moveTo(sourceNode.x, sourceNode.y);
-          ctx.lineTo(targetNode.x, targetNode.y);
-          
-          // Highlight connections for selected node
-          if (selectedNode && 
-              (selectedNode.id === sourceNode.id || selectedNode.id === targetNode.id)) {
-            ctx.strokeStyle = '#ec4899'; // cinema-highlight
-            ctx.lineWidth = 2;
-          } else {
-            ctx.strokeStyle = '#6b7280'; // muted gray
-            ctx.lineWidth = 1;
-          }
-          
-          ctx.stroke();
-        }
-      });
-      
-      // Draw nodes
-      nodes.forEach(node => {
-        ctx.beginPath();
-        ctx.arc(node.x, node.y, node.radius, 0, 2 * Math.PI);
-        
-        // Fill based on media type
-        if (node.type === 'movie') {
-          ctx.fillStyle = '#1c1e25'; // cinema-card
-        } else {
-          ctx.fillStyle = '#1c1e25'; // cinema-card
-        }
-        
-        ctx.fill();
-        
-        // Stroke color based on selection
-        if (selectedNode && selectedNode.id === node.id) {
-          ctx.strokeStyle = '#ec4899'; // cinema-highlight
-          ctx.lineWidth = 3;
-        } else {
-          ctx.strokeStyle = node.type === 'movie' ? '#6d28d9' : '#ec4899'; // cinema-accent or cinema-highlight
-          ctx.lineWidth = 2;
-        }
-        
-        ctx.stroke();
-        
-        // Draw node label
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '10px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        // Wrap text to fit in node
-        const words = node.title.split(' ');
-        let line = '';
-        let y = node.y + node.radius + 15;
-        
-        for (let i = 0; i < words.length; i++) {
-          const testLine = line + words[i] + ' ';
-          const metrics = ctx.measureText(testLine);
-          
-          if (metrics.width > 100 && i > 0) {
-            ctx.fillText(line, node.x, y);
-            line = words[i] + ' ';
-            y += 12;
-          } else {
-            line = testLine;
-          }
-        }
-        
-        ctx.fillText(line, node.x, y);
-      });
-    }
-    
-    drawGraph();
-    
-    // Handle mouse events
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-      
-      // Check if mouse is over a node
-      let hoveredNode = null;
-      for (const node of nodes) {
-        const dx = mouseX - node.x;
-        const dy = mouseY - node.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        
-        if (distance < node.radius) {
-          hoveredNode = node;
-          break;
-        }
-      }
-      
-      if (hoveredNode !== selectedNode) {
-        setSelectedNode(hoveredNode);
-        canvas.style.cursor = hoveredNode ? 'pointer' : 'default';
-        drawGraph();
-      }
-    };
-    
-    const handleClick = () => {
-      if (selectedNode) {
-        navigate(`/media/${selectedNode.id}`);
-      }
-    };
-    
-    canvas.addEventListener('mousemove', handleMouseMove);
-    canvas.addEventListener('click', handleClick);
+    window.addEventListener('resize', handleResize);
     
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      canvas.removeEventListener('mousemove', handleMouseMove);
-      canvas.removeEventListener('click', handleClick);
+      window.removeEventListener('resize', handleResize);
     };
-  }, [nodes, links, selectedNode, navigate]);
+  }, [navigate]);
   
   return (
     <div className="py-8 px-4 container mx-auto flex flex-col h-[calc(100vh-120px)]">
@@ -230,16 +160,14 @@ export const MediaGraph = () => {
         <h1 className="text-3xl font-bold">Media Connections Graph</h1>
         <Button variant="outline" className="flex items-center gap-2">
           <Info size={16} />
-          <span className="hidden sm:inline">Click on nodes to view details</span>
+          <span className="hidden sm:inline">Drag to rotate, scroll to zoom</span>
         </Button>
       </div>
       
       <div 
         className="flex-1 bg-cinema-dark border border-gray-800 rounded-lg overflow-hidden"
         ref={containerRef}
-      >
-        <canvas ref={canvasRef} className="w-full h-full"></canvas>
-      </div>
+      />
       
       {selectedNode && (
         <div className="mt-4 p-4 bg-cinema-card border border-gray-800 rounded-lg">
