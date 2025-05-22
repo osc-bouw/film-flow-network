@@ -1,11 +1,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { mediaData } from "../data/mediaData";
+import { useMedia } from "../context/MediaContext";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
 import { toast } from "sonner";
 import ForceGraph3D from "3d-force-graph";
+import SpriteText from 'three-spritetext';
 
 interface GraphNode {
   id: string;
@@ -15,14 +16,20 @@ interface GraphNode {
 }
 
 interface GraphLink {
-  source: string;
-  target: string;
+  source: string | GraphNode;
+  target: string | GraphNode;
+}
+
+interface GraphData {
+  nodes: GraphNode[];
+  links: GraphLink[];
 }
 
 export const MediaGraph = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const navigate = useNavigate();
+  const { allMedia } = useMedia();
   
   // Initialize graph
   useEffect(() => {
@@ -32,8 +39,8 @@ export const MediaGraph = () => {
     containerRef.current.innerHTML = '';
     
     // Prepare data for the 3D force graph
-    const graphData = {
-      nodes: mediaData.map(media => ({
+    const graphData: GraphData = {
+      nodes: allMedia.map(media => ({
         id: media.id,
         title: media.title,
         type: media.type,
@@ -43,13 +50,17 @@ export const MediaGraph = () => {
     };
     
     // Create links between related media
-    mediaData.forEach(media => {
+    allMedia.forEach(media => {
       media.relatedMedia.forEach(relatedId => {
         // Avoid duplicate links
         const existingLink = graphData.links.find(
-          link => 
-            (link.source === media.id && link.target === relatedId) || 
-            (link.source === relatedId && link.target === media.id)
+          link => {
+            const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
+            const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+            
+            return (sourceId === media.id && targetId === relatedId) || 
+                   (sourceId === relatedId && targetId === media.id);
+          }
         );
         
         if (!existingLink) {
@@ -73,8 +84,8 @@ export const MediaGraph = () => {
       .nodeVal(node => (node as GraphNode).val * 10) // Size multiplier
       .linkColor(() => '#6b7280')
       .linkWidth(link => {
-        const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-        const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+        const sourceId = typeof link.source === 'object' ? (link.source as GraphNode).id : link.source;
+        const targetId = typeof link.target === 'object' ? (link.target as GraphNode).id : link.target;
         
         if (
           selectedNode && 
@@ -86,7 +97,7 @@ export const MediaGraph = () => {
       })
       .linkOpacity(0.5)
       .onNodeClick(node => {
-        navigate(`/media/${node.id}`);
+        navigate(`/media/${(node as GraphNode).id}`);
       })
       .onNodeHover(node => {
         if (node) {
@@ -94,20 +105,20 @@ export const MediaGraph = () => {
           
           // Highlight connections
           Graph.linkWidth(link => {
-            const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-            const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+            const sourceId = typeof link.source === 'object' ? (link.source as GraphNode).id : link.source;
+            const targetId = typeof link.target === 'object' ? (link.target as GraphNode).id : link.target;
             
-            if (node.id === sourceId || node.id === targetId) {
+            if ((node as GraphNode).id === sourceId || (node as GraphNode).id === targetId) {
               return 2;
             }
             return 1;
           });
           
           Graph.linkColor(link => {
-            const sourceId = typeof link.source === 'object' ? link.source.id : link.source;
-            const targetId = typeof link.target === 'object' ? link.target.id : link.target;
+            const sourceId = typeof link.source === 'object' ? (link.source as GraphNode).id : link.source;
+            const targetId = typeof link.target === 'object' ? (link.target as GraphNode).id : link.target;
             
-            if (node.id === sourceId || node.id === targetId) {
+            if ((node as GraphNode).id === sourceId || (node as GraphNode).id === targetId) {
               return '#ec4899'; // cinema-highlight
             }
             return '#6b7280'; // muted gray
@@ -125,8 +136,8 @@ export const MediaGraph = () => {
     Graph.nodeThreeObject(node => {
       const { title, type } = node as GraphNode;
       
-      // Use the 3d-force-graph API to create a text sprite
-      const sprite = new window.SpriteText(title);
+      // Use the SpriteText from three-spritetext for text labels
+      const sprite = new SpriteText(title);
       sprite.color = 'white';
       sprite.textHeight = 2.5;
       sprite.position.y = 5;
@@ -152,7 +163,7 @@ export const MediaGraph = () => {
     return () => {
       window.removeEventListener('resize', handleResize);
     };
-  }, [navigate]);
+  }, [navigate, allMedia, selectedNode]);
   
   return (
     <div className="py-8 px-4 container mx-auto flex flex-col h-[calc(100vh-120px)]">
