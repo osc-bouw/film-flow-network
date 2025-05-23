@@ -1,14 +1,24 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useMedia } from "../context/MediaContext";
-import { Upload, Download, FileJson } from "lucide-react";
+import { Upload, Download, FileJson, FileText } from "lucide-react";
 import { toast } from "sonner";
-import { Media } from "../types/media";
+import { Media, Collection } from "../types/media";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 export const MediaImportExport = () => {
-  const { allMedia, importMedia } = useMedia();
+  const { allMedia, importMedia, createCollection, collections } = useMedia();
   const [isUploading, setIsUploading] = useState(false);
+  const [markdownText, setMarkdownText] = useState("");
+  const [showMarkdownImport, setShowMarkdownImport] = useState(false);
   
   const handleExport = () => {
     try {
@@ -138,6 +148,112 @@ export const MediaImportExport = () => {
     reader.readAsText(file);
   };
 
+  const parseMarkdown = async (markdown: string) => {
+    try {
+      const lines = markdown.split('\n').filter(line => line.trim());
+      
+      let currentCollectionId: string | null = null;
+      let currentSection: 'collections' | 'movies' | null = null;
+      let mediaItems: Media[] = [...allMedia];
+      const mediaMap = new Map(mediaItems.map(item => [item.title, item]));
+      const collectionsCreated: Collection[] = [];
+      
+      for (const line of lines) {
+        // Collection header
+        if (line.startsWith('## Collections')) {
+          currentSection = 'collections';
+          continue;
+        }
+        
+        // Movie section header
+        if (line.startsWith('### Movies')) {
+          currentSection = 'movies';
+          continue;
+        }
+        
+        // Collection item
+        if (line.startsWith('[[Collection ')) {
+          if (currentSection !== 'collections') continue;
+          
+          const collectionName = line.replace('[[Collection ', '').replace(']]', '');
+          const collectionId = collectionName.toLowerCase().replace(/\s+/g, '-');
+          
+          // Check if collection already exists
+          if (!collections.some(c => c.id === collectionId)) {
+            currentCollectionId = createCollection(collectionName);
+            
+            const newCollection = collections.find(c => c.id === currentCollectionId);
+            if (newCollection) {
+              collectionsCreated.push(newCollection);
+            }
+          } else {
+            currentCollectionId = collectionId;
+          }
+          
+          continue;
+        }
+        
+        // Media item
+        if (line.startsWith('[[') && line.endsWith(']]') && currentSection === 'movies') {
+          const title = line.substring(2, line.length - 2);
+          
+          // Check if this media already exists
+          if (!mediaMap.has(title)) {
+            // Generate a unique ID for new media
+            const newId = `import-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+            
+            // Create new media item with default values
+            const newMedia: Media = {
+              id: newId,
+              title,
+              type: 'movie', // Default to movie
+              year: new Date().getFullYear(), // Default to current year
+              poster: "https://placehold.co/300x450/1c1e25/white?text=No+Image",
+              watched: false,
+              description: `Description for ${title}`,
+              genres: [],
+              relatedMedia: []
+            };
+            
+            mediaItems.push(newMedia);
+            mediaMap.set(title, newMedia);
+          }
+          
+          // Add to collection if we're in a collection
+          if (currentCollectionId) {
+            const mediaItem = mediaMap.get(title);
+            if (mediaItem) {
+              const collection = collections.find(c => c.id === currentCollectionId);
+              if (collection && !collection.mediaIds.includes(mediaItem.id)) {
+                collection.mediaIds.push(mediaItem.id);
+              }
+            }
+          }
+        }
+      }
+      
+      // Get images for newly added media items
+      const newMediaItems = mediaItems.filter(item => !allMedia.some(m => m.id === item.id));
+      if (newMediaItems.length > 0) {
+        toast.info(`Fetching metadata for ${newMediaItems.length} new items...`);
+        const processedMedia = await processImportedMedia(newMediaItems);
+        
+        // Update existing media with new items
+        const finalMediaItems = allMedia.concat(
+          processedMedia.filter(item => !allMedia.some(m => m.id === item.id))
+        );
+        
+        importMedia(finalMediaItems);
+      }
+      
+      toast.success(`Imported ${newMediaItems.length} new items and ${collectionsCreated.length} collections`);
+      setShowMarkdownImport(false);
+    } catch (error) {
+      console.error("Markdown import failed:", error);
+      toast.error("Failed to import from markdown format");
+    }
+  };
+
   return (
     <div className="flex flex-wrap gap-2 items-center">
       <Button
@@ -167,6 +283,47 @@ export const MediaImportExport = () => {
           onChange={handleImport}
         />
       </div>
+      
+      <Dialog open={showMarkdownImport} onOpenChange={setShowMarkdownImport}>
+        <DialogTrigger asChild>
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <FileText className="h-4 w-4" /> Import Markdown
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[625px]">
+          <DialogHeader>
+            <DialogTitle>Import from Markdown</DialogTitle>
+            <DialogDescription>
+              Paste your markdown formatted collections and media below.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <Textarea 
+              className="h-[300px] font-mono text-sm"
+              placeholder="## Collections
+[[Collection Marvel]]
+### Movies
+[[Iron Man]]"
+              value={markdownText}
+              onChange={(e) => setMarkdownText(e.target.value)}
+            />
+          </div>
+          
+          <div className="flex justify-end">
+            <Button 
+              onClick={() => parseMarkdown(markdownText)}
+              disabled={!markdownText.trim()}
+            >
+              Import
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       
       <Button
         variant="ghost"
