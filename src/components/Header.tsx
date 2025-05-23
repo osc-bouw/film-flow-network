@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { useMedia } from "../context/MediaContext";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Film, Tv } from "lucide-react";
+import { Film, Tv, FolderOpen } from "lucide-react";
 
 export const Header = () => {
   const { activeFilter, setActiveFilter, watchStatus, setWatchStatus } = useMedia();
@@ -27,6 +27,9 @@ export const Header = () => {
                 </TabsTrigger>
                 <TabsTrigger value="tvshows" className="flex items-center gap-1">
                   <Tv size={16} /> TV Shows
+                </TabsTrigger>
+                <TabsTrigger value="collections" className="flex items-center gap-1">
+                  <FolderOpen size={16} /> Collections
                 </TabsTrigger>
               </TabsList>
             </Tabs>

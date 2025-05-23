@@ -1,8 +1,9 @@
+
 import { useState } from "react";
 import { useMedia } from "../context/MediaContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Trash2, FolderPlus, SectionIcon } from "lucide-react";
+import { PlusCircle, Trash2, FolderPlus, SectionIcon, Image } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -26,15 +27,42 @@ export const Collections = () => {
     deleteCollection, 
     activeCollection, 
     setActiveCollection,
-    allMedia
+    allMedia,
+    updateCollection
   } = useMedia();
   const [newCollectionName, setNewCollectionName] = useState("");
+  const [newCollectionImage, setNewCollectionImage] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingCollection, setEditingCollection] = useState<string | null>(null);
 
   const handleCreateCollection = () => {
     if (newCollectionName.trim()) {
-      createCollection(newCollectionName);
+      createCollection(newCollectionName, newCollectionImage || undefined);
       setNewCollectionName("");
+      setNewCollectionImage("");
+      setIsDialogOpen(false);
+    }
+  };
+
+  const handleEditCollection = (id: string) => {
+    const collection = collections.find(c => c.id === id);
+    if (collection) {
+      setEditingCollection(id);
+      setNewCollectionName(collection.name);
+      setNewCollectionImage(collection.image || "");
+      setIsDialogOpen(true);
+    }
+  };
+
+  const handleUpdateCollection = () => {
+    if (editingCollection && newCollectionName.trim()) {
+      updateCollection(editingCollection, {
+        name: newCollectionName,
+        image: newCollectionImage || undefined
+      });
+      setNewCollectionName("");
+      setNewCollectionImage("");
+      setEditingCollection(null);
       setIsDialogOpen(false);
     }
   };
@@ -57,28 +85,71 @@ export const Collections = () => {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New Collection</DialogTitle>
+              <DialogTitle>
+                {editingCollection ? "Edit Collection" : "Create New Collection"}
+              </DialogTitle>
               <DialogDescription>
                 Collections help you organize your media by themes, franchises, or any grouping you prefer.
               </DialogDescription>
             </DialogHeader>
             
-            <div className="py-4">
-              <Input
-                placeholder="Collection name"
-                value={newCollectionName}
-                onChange={(e) => setNewCollectionName(e.target.value)}
-                className="w-full"
-              />
+            <div className="py-4 space-y-4">
+              <div>
+                <label htmlFor="collection-name" className="text-sm font-medium mb-1 block">
+                  Collection Name
+                </label>
+                <Input
+                  id="collection-name"
+                  placeholder="Collection name"
+                  value={newCollectionName}
+                  onChange={(e) => setNewCollectionName(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              
+              <div>
+                <label htmlFor="collection-image" className="text-sm font-medium mb-1 block">
+                  Collection Image URL (optional)
+                </label>
+                <Input
+                  id="collection-image"
+                  placeholder="https://example.com/image.jpg"
+                  value={newCollectionImage}
+                  onChange={(e) => setNewCollectionImage(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              
+              {newCollectionImage && (
+                <div className="mt-2">
+                  <p className="text-xs text-muted-foreground mb-1">Image Preview:</p>
+                  <div className="relative aspect-video w-full overflow-hidden rounded-md border border-gray-700">
+                    <img 
+                      src={newCollectionImage} 
+                      alt="Collection preview" 
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://placehold.co/600x400/png?text=Invalid+Image';
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
             
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+              <Button variant="outline" onClick={() => {
+                setIsDialogOpen(false);
+                setEditingCollection(null);
+                setNewCollectionName("");
+                setNewCollectionImage("");
+              }}>
                 Cancel
               </Button>
-              <Button onClick={handleCreateCollection}>
+              
+              <Button onClick={editingCollection ? handleUpdateCollection : handleCreateCollection}>
                 <FolderPlus className="mr-2 h-4 w-4" />
-                Create Collection
+                {editingCollection ? "Update Collection" : "Create Collection"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -107,24 +178,51 @@ export const Collections = () => {
                   className={`flex-1 justify-start h-auto py-3 px-4 font-normal ${activeCollection === collection.id ? 'bg-primary text-primary-foreground' : ''}`}
                   onClick={() => setActiveCollection(activeCollection === collection.id ? null : collection.id)}
                 >
-                  <span className="truncate">{collection.name}</span>
+                  <div className="flex items-center gap-2">
+                    {collection.image ? (
+                      <div className="h-6 w-6 rounded overflow-hidden flex-shrink-0">
+                        <img 
+                          src={collection.image}
+                          alt={collection.name}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <SectionIcon size={16} />
+                    )}
+                    <span className="truncate">{collection.name}</span>
+                  </div>
                   <span className="ml-2 text-xs bg-secondary text-secondary-foreground rounded-full px-2 py-0.5">
                     {getCollectionCount(collection.id)}
                   </span>
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="icon"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (confirm(`Delete collection "${collection.name}"?`)) {
-                      deleteCollection(collection.id);
-                    }
-                  }}
-                  className="hover:text-destructive"
-                >
-                  <Trash2 size={16} />
-                </Button>
+                
+                <div className="flex">
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditCollection(collection.id);
+                    }}
+                    className="hover:text-primary"
+                  >
+                    <Image size={16} />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Delete collection "${collection.name}"?`)) {
+                        deleteCollection(collection.id);
+                      }
+                    }}
+                    className="hover:text-destructive"
+                  >
+                    <Trash2 size={16} />
+                  </Button>
+                </div>
               </div>
               <AccordionContent className="pl-4">
                 {collection.mediaIds.length > 0 ? (

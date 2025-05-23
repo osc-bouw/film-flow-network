@@ -19,4 +19,5 @@ export interface Collection {
   id: string;
   name: string;
   mediaIds: string[];
+  image?: string; // Added image support for collections
 }

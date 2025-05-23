@@ -9,20 +9,22 @@ interface MediaContextType {
   watchedMedia: Media[];
   unwatchedMedia: Media[];
   filteredMedia: Media[];
-  activeFilter: 'all' | 'movies' | 'tvshows';
+  activeFilter: 'all' | 'movies' | 'tvshows' | 'collections';
   watchStatus: 'all' | 'watched' | 'unwatched';
   collections: Collection[];
   activeCollection: string | null;
-  setActiveFilter: (filter: 'all' | 'movies' | 'tvshows') => void;
+  setActiveFilter: (filter: 'all' | 'movies' | 'tvshows' | 'collections') => void;
   setWatchStatus: (status: 'all' | 'watched' | 'unwatched') => void;
   toggleWatched: (id: string) => void;
   updateRating: (id: string, rating: number) => void;
   importMedia: (mediaItems: Media[]) => void;
-  createCollection: (name: string) => void;
+  createCollection: (name: string, image?: string) => string | undefined;
+  updateCollection: (id: string, updates: Partial<Collection>) => void;
   deleteCollection: (id: string) => void;
   addToCollection: (collectionId: string, mediaId: string) => void;
   removeFromCollection: (collectionId: string, mediaId: string) => void;
   setActiveCollection: (collectionId: string | null) => void;
+  updateRelatedMedia: (id: string, relatedMedia: string[]) => void;
 }
 
 const STORAGE_KEY = 'mediatracker-data';
@@ -43,17 +45,19 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       {
         id: "marvel",
         name: "Marvel Movies",
-        mediaIds: ["1", "2"]
+        mediaIds: ["1", "2"],
+        image: "https://images.unsplash.com/photo-1531297484001-80022131f5a1"
       },
       {
         id: "star-wars",
         name: "Star Wars",
-        mediaIds: ["7"]
+        mediaIds: ["7"],
+        image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb"
       }
     ];
   });
   
-  const [activeFilter, setActiveFilter] = useState<'all' | 'movies' | 'tvshows'>('all');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'movies' | 'tvshows' | 'collections'>('all');
   const [watchStatus, setWatchStatus] = useState<'all' | 'watched' | 'unwatched'>('all');
   const [activeCollection, setActiveCollection] = useState<string | null>(null);
 
@@ -79,6 +83,9 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Filter by media type
     if (activeFilter === 'movies' && item.type !== 'movie') return false;
     if (activeFilter === 'tvshows' && item.type !== 'tvshow') return false;
+    
+    // If collections filter is active, show nothing (collections are handled separately)
+    if (activeFilter === 'collections') return false;
     
     // Filter by watch status
     if (watchStatus === 'watched' && !item.watched) return false;
@@ -116,6 +123,18 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       toast(`Rated ${mediaItem.title} ${rating} stars`);
     }
   };
+  
+  const updateRelatedMedia = (id: string, relatedMedia: string[]) => {
+    setMedia(prevMedia =>
+      prevMedia.map(item =>
+        item.id === id
+          ? { ...item, relatedMedia }
+          : item
+      )
+    );
+    
+    toast(`Updated related media for ${media.find(item => item.id === id)?.title}`);
+  };
 
   const importMedia = (mediaItems: Media[]) => {
     // Validate imported media
@@ -139,7 +158,7 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setMedia(validatedMedia);
   };
 
-  const createCollection = (name: string) => {
+  const createCollection = (name: string, image?: string) => {
     if (!name.trim()) {
       toast.error("Collection name cannot be empty");
       return;
@@ -156,11 +175,20 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       id,
       name,
       mediaIds: [],
+      image,
     };
     
     setCollections([...collections, newCollection]);
     toast.success(`Created collection: ${name}`);
     return id;
+  };
+  
+  const updateCollection = (id: string, updates: Partial<Collection>) => {
+    setCollections(collections.map(collection => 
+      collection.id === id ? { ...collection, ...updates } : collection
+    ));
+    
+    toast.success(`Updated collection: ${updates.name || collections.find(c => c.id === id)?.name}`);
   };
   
   const deleteCollection = (id: string) => {
@@ -226,10 +254,12 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         updateRating,
         importMedia,
         createCollection,
+        updateCollection,
         deleteCollection,
         addToCollection,
         removeFromCollection,
-        setActiveCollection
+        setActiveCollection,
+        updateRelatedMedia
       }}
     >
       {children}
