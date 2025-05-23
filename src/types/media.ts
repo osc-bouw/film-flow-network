@@ -14,3 +14,9 @@ export interface Media {
   director?: string;
   relatedMedia: string[]; // IDs of related media
 }
+
+export interface Collection {
+  id: string;
+  name: string;
+  mediaIds: string[];
+}

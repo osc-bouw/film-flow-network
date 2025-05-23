@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MediaProvider } from "./context/MediaContext";
 import Index from "./pages/Index";
 import MediaDetailPage from "./pages/MediaDetailPage";
-import GraphPage from "./pages/GraphPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,7 +21,6 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/media/:id" element={<MediaDetailPage />} />
-            <Route path="/graph" element={<GraphPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

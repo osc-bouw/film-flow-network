@@ -40,12 +40,9 @@ export const Header = () => {
             </Tabs>
           </div>
           
-          <nav className="flex gap-4">
+          <nav>
             <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
               Home
-            </Link>
-            <Link to="/graph" className="text-sm font-medium hover:text-primary transition-colors">
-              Media Graph
             </Link>
           </nav>
         </div>
