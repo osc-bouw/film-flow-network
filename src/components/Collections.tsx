@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { useMedia } from "../context/MediaContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PlusCircle, Trash2, FolderPlus, CollectionIcon } from "lucide-react";
+import { PlusCircle, Trash2, FolderPlus, SectionIcon } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -88,7 +87,7 @@ export const Collections = () => {
 
       {collections.length === 0 ? (
         <div className="text-center p-8 border border-dashed border-gray-700 rounded-lg">
-          <CollectionIcon className="mx-auto h-12 w-12 text-gray-500 mb-2" />
+          <SectionIcon className="mx-auto h-12 w-12 text-gray-500 mb-2" />
           <p className="text-muted-foreground">No collections yet.</p>
           <p className="text-sm text-muted-foreground mb-4">
             Create collections to organize your media by themes or franchises.
