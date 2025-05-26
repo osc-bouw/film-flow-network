@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Media, MediaType, Collection } from "../types/media";
 import { mediaData } from "../data/mediaData";
@@ -18,6 +17,7 @@ interface MediaContextType {
   toggleWatched: (id: string) => void;
   updateRating: (id: string, rating: number) => void;
   importMedia: (mediaItems: Media[]) => void;
+  clearAllMedia: () => void;
   createCollection: (name: string, image?: string) => string | undefined;
   updateCollection: (id: string, updates: Partial<Collection>) => void;
   deleteCollection: (id: string) => void;
@@ -158,6 +158,13 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setMedia(validatedMedia);
   };
 
+  const clearAllMedia = () => {
+    setMedia([]);
+    setCollections([]);
+    setActiveCollection(null);
+    toast.success("All media and collections cleared");
+  };
+
   const createCollection = (name: string, image?: string) => {
     if (!name.trim()) {
       toast.error("Collection name cannot be empty");
@@ -253,6 +260,7 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toggleWatched,
         updateRating,
         importMedia,
+        clearAllMedia,
         createCollection,
         updateCollection,
         deleteCollection,
