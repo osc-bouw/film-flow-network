@@ -2,6 +2,7 @@
 import { Header } from "../components/Header";
 import { MediaGrid } from "../components/MediaGrid";
 import { MediaImportExport } from "../components/MediaImportExport";
+import { AddMediaButton } from "../components/AddMediaButton";
 import { Collections } from "../components/Collections";
 import { useMedia } from "../context/MediaContext";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -100,7 +101,10 @@ const HomePage = () => {
                 )}
               </div>
               
-              <MediaImportExport />
+              <div className="flex gap-2">
+                <AddMediaButton />
+                <MediaImportExport />
+              </div>
             </div>
             
             {renderContent()}

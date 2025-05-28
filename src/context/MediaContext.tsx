@@ -16,6 +16,7 @@ interface MediaContextType {
   setWatchStatus: (status: 'all' | 'watched' | 'unwatched') => void;
   toggleWatched: (id: string) => void;
   updateRating: (id: string, rating: number) => void;
+  addMedia: (media: Media) => void;
   importMedia: (mediaItems: Media[]) => void;
   clearAllMedia: () => void;
   createCollection: (name: string, image?: string) => string | undefined;
@@ -134,6 +135,22 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     );
     
     toast(`Updated related media for ${media.find(item => item.id === id)?.title}`);
+  };
+
+  const addMedia = (newMedia: Media) => {
+    // Check if media with same title and year already exists
+    const exists = media.some(item => 
+      item.title.toLowerCase() === newMedia.title.toLowerCase() && 
+      item.year === newMedia.year
+    );
+    
+    if (exists) {
+      toast.error("A media item with this title and year already exists");
+      return;
+    }
+    
+    setMedia(prevMedia => [...prevMedia, newMedia]);
+    toast.success(`Added ${newMedia.title} to your library`);
   };
 
   const importMedia = (mediaItems: Media[]) => {
@@ -259,6 +276,7 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setWatchStatus,
         toggleWatched,
         updateRating,
+        addMedia,
         importMedia,
         clearAllMedia,
         createCollection,
