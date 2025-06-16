@@ -20,7 +20,7 @@ interface MediaContextType {
   addMedia: (media: Media) => void;
   importMedia: (mediaItems: Media[]) => void;
   clearAllMedia: () => void;
-  createCollection: (name: string, image?: string) => string | undefined;
+  createCollection: (name: string, image?: string) => Promise<string | undefined>;
   updateCollection: (id: string, updates: Partial<Collection>) => void;
   deleteCollection: (id: string) => void;
   addToCollection: (collectionId: string, mediaId: string) => void;
