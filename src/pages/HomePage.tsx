@@ -10,7 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 
 const HomePage = () => {
-  const { filteredMedia, activeFilter, watchStatus, activeCollection, collections } = useMedia();
+  const { filteredMedia, activeFilter, watchStatus, activeCollection, collections, loading } = useMedia();
   
   const getTitleText = () => {
     let typeText = activeFilter === 'movies' ? 'Movies' : 
@@ -36,6 +36,17 @@ const HomePage = () => {
   };
   
   const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading your media library...</p>
+          </div>
+        </div>
+      );
+    }
+
     if (activeFilter === 'collections') {
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -94,7 +105,7 @@ const HomePage = () => {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
               <div>
                 <h1 className="text-3xl font-bold mb-2">{getTitleText()}</h1>
-                {activeFilter !== 'collections' && (
+                {activeFilter !== 'collections' && !loading && (
                   <p className="text-muted-foreground">
                     {filteredMedia.length} {filteredMedia.length === 1 ? 'item' : 'items'}
                   </p>

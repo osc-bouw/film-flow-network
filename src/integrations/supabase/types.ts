@@ -9,7 +9,147 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      collection_media: {
+        Row: {
+          collection_id: string
+          created_at: string
+          id: string
+          media_id: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          id?: string
+          media_id: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          id?: string
+          media_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_media_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_media_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          created_at: string
+          id: string
+          image: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          image?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          image?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      media: {
+        Row: {
+          created_at: string
+          description: string | null
+          director: string | null
+          genres: string[]
+          id: string
+          poster: string | null
+          rating: number | null
+          title: string
+          type: Database["public"]["Enums"]["media_type"]
+          updated_at: string
+          watched: boolean
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          director?: string | null
+          genres?: string[]
+          id?: string
+          poster?: string | null
+          rating?: number | null
+          title: string
+          type: Database["public"]["Enums"]["media_type"]
+          updated_at?: string
+          watched?: boolean
+          year: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          director?: string | null
+          genres?: string[]
+          id?: string
+          poster?: string | null
+          rating?: number | null
+          title?: string
+          type?: Database["public"]["Enums"]["media_type"]
+          updated_at?: string
+          watched?: boolean
+          year?: number
+        }
+        Relationships: []
+      }
+      related_media: {
+        Row: {
+          created_at: string
+          id: string
+          media_id: string
+          related_media_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          media_id: string
+          related_media_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_id?: string
+          related_media_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "related_media_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "related_media_related_media_id_fkey"
+            columns: ["related_media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +158,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      media_type: "movie" | "tvshow"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +273,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      media_type: ["movie", "tvshow"],
+    },
   },
 } as const
