@@ -20,6 +20,7 @@ interface MediaContextType {
   toggleWatched: (id: string) => void;
   updateRating: (id: string, rating: number) => void;
   addMedia: (media: Media) => void;
+  deleteMedia: (id: string) => void;
   importMedia: (mediaItems: Media[]) => void;
   clearAllMedia: () => void;
   createCollection: (name: string, image?: string) => Promise<string | undefined>;
@@ -147,6 +148,26 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
     setMedia(prevMedia => [item, ...prevMedia]);
     toast.success(`Added ${newMedia.title} to your library`);
+  };
+
+  const deleteMedia = (id: string) => {
+    setMedia(prev =>
+      prev
+        .filter(item => item.id !== id)
+        .map(item => ({
+          ...item,
+          relatedMedia: item.relatedMedia.filter(rid => rid !== id)
+        }))
+    );
+
+    setCollections(prev =>
+      prev.map(collection => ({
+        ...collection,
+        mediaIds: collection.mediaIds.filter(mid => mid !== id)
+      }))
+    );
+
+    toast.success('Media deleted');
   };
 
   const importMedia = (mediaItems: Media[]) => {
@@ -278,6 +299,7 @@ export const MediaProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         toggleWatched,
         updateRating,
         addMedia,
+        deleteMedia,
         importMedia,
         clearAllMedia,
         createCollection,
