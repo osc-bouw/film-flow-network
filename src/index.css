@@ -46,7 +46,7 @@
   }
 
   .homepage-main {
-    @apply bg-gradient-to-b from-[#1e293b] to-[#0f172a] text-white;
+    @apply bg-gradient-to-b from-[red] to-[#0f172a] text-white;
   }
 }
 
