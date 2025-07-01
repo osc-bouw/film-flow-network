@@ -154,7 +154,7 @@ export const MediaImportExport = () => {
       
       let currentCollectionId: string | null = null;
       let currentSection: 'collections' | 'movies' | null = null;
-      let mediaItems: Media[] = [...allMedia];
+      const mediaItems: Media[] = [...allMedia];
       const mediaMap = new Map(mediaItems.map(item => [item.title, item]));
       const collectionsCreated: Collection[] = [];
       
@@ -180,11 +180,17 @@ export const MediaImportExport = () => {
           
           // Check if collection already exists
           if (!collections.some(c => c.id === collectionId)) {
-            currentCollectionId = createCollection(collectionName);
-            
-            const newCollection = collections.find(c => c.id === currentCollectionId);
-            if (newCollection) {
-              collectionsCreated.push(newCollection);
+            const createdId = await createCollection(collectionName);
+
+            if (createdId) {
+              currentCollectionId = createdId;
+              collectionsCreated.push({
+                id: createdId,
+                name: collectionName,
+                mediaIds: [],
+              });
+            } else {
+              currentCollectionId = collectionId;
             }
           } else {
             currentCollectionId = collectionId;
