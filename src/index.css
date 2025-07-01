@@ -48,6 +48,10 @@
   .homepage-main {
     @apply bg-gradient-to-b from-[red] to-[#0f172a] text-white;
   }
+
+  .bg-sidebar {
+    background-color: #3d3d3d;
+  }
 }
 
 /* Custom styles for our media tracker */
