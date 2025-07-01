@@ -9,15 +9,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 
 const HomePage = () => {
-  const { filteredMedia, activeFilter, watchStatus, activeCollection, collections, loading } = useMedia();
+  const {
+    filteredMedia,
+    activeFilter,
+    watchStatus,
+    activeCollection,
+    collections,
+    loading,
+    setActiveCollection
+  } = useMedia();
   
   const getTitleText = () => {
-    let typeText = activeFilter === 'movies' ? 'Movies' : 
+    const typeText = activeFilter === 'movies' ? 'Movies' : 
                   activeFilter === 'tvshows' ? 'TV Shows' : 
                   activeFilter === 'collections' ? 'Collections' :
                   'Media';
     
-    let statusText = watchStatus === 'watched' ? 'Watched' : 
+    const statusText = watchStatus === 'watched' ? 'Watched' : 
                     watchStatus === 'unwatched' ? 'To Watch' : 
                     'All';
     
@@ -51,13 +59,15 @@ const HomePage = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {collections.map(collection => (
             <Card key={collection.id} className="overflow-hidden hover:border-primary transition-colors">
-              <Link 
-                to="/" 
+              <Link
+                to="/"
                 onClick={(e) => {
                   e.preventDefault();
-                  activeCollection === collection.id 
-                    ? useMedia().setActiveCollection(null) 
-                    : useMedia().setActiveCollection(collection.id);
+                  if (activeCollection === collection.id) {
+                    setActiveCollection(null);
+                  } else {
+                    setActiveCollection(collection.id);
+                  }
                 }}
                 className="block h-full"
               >

@@ -19,7 +19,12 @@ export const Header = () => {
           </Link>
           
           <div className="flex flex-wrap items-center gap-4">
-            <Tabs value={activeFilter} onValueChange={(v) => setActiveFilter(v as any)}>
+            <Tabs
+              value={activeFilter}
+              onValueChange={(v: 'all' | 'movies' | 'tvshows' | 'collections') =>
+                setActiveFilter(v)
+              }
+            >
               <TabsList>
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="movies" className="flex items-center gap-1">
@@ -34,7 +39,12 @@ export const Header = () => {
               </TabsList>
             </Tabs>
             
-            <Tabs value={watchStatus} onValueChange={(v) => setWatchStatus(v as any)}>
+            <Tabs
+              value={watchStatus}
+              onValueChange={(v: 'all' | 'watched' | 'unwatched') =>
+                setWatchStatus(v)
+              }
+            >
               <TabsList>
                 <TabsTrigger value="all">All</TabsTrigger>
                 <TabsTrigger value="watched">Watched</TabsTrigger>
@@ -43,9 +53,12 @@ export const Header = () => {
             </Tabs>
           </div>
           
-          <nav>
+          <nav className="flex gap-4">
             <Link to="/" className="text-sm font-medium hover:text-primary transition-colors">
               Home
+            </Link>
+            <Link to="/timeline" className="text-sm font-medium hover:text-primary transition-colors">
+              Timeline
             </Link>
           </nav>
         </div>
