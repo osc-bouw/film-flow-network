@@ -15,7 +15,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 export const MediaImportExport = () => {
-  const { allMedia, importMedia, createCollection, collections } = useMedia();
+  const { allMedia, importMedia, createCollection, collections, addToCollection } = useMedia();
   const [isUploading, setIsUploading] = useState(false);
   const [markdownText, setMarkdownText] = useState("");
   const [showMarkdownImport, setShowMarkdownImport] = useState(false);
@@ -231,7 +231,7 @@ export const MediaImportExport = () => {
             if (mediaItem) {
               const collection = collections.find(c => c.id === currentCollectionId);
               if (collection && !collection.mediaIds.includes(mediaItem.id)) {
-                collection.mediaIds.push(mediaItem.id);
+                addToCollection(collection.id, mediaItem.id);
               }
             }
           }
