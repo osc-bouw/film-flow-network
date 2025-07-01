@@ -1,4 +1,3 @@
-
 import { Header } from "../components/Header";
 import { MediaGrid } from "../components/MediaGrid";
 import { MediaImportExport } from "../components/MediaImportExport";
@@ -95,7 +94,7 @@ const HomePage = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       
-      <main className="flex-1 py-8 px-4 lg:px-8 container mx-auto">
+      <main className="flex-1 py-8 px-4 lg:px-8 container mx-auto homepage-main">
         <div className="flex flex-col md:flex-row gap-8">
           <div className="md:w-64 lg:w-72 shrink-0">
             <Collections />
