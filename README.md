@@ -2,6 +2,9 @@
 
 ## Project info
 
+Project is started with Lovable, then modified by me with Visual Code and ChatGPT Codex.
+Feel free to help develop this opensource movie timeline editor.
+
 **URL**: https://lovable.dev/projects/b862c4ab-9476-46a3-b598-02ad0f982bfc
 
 ## How can I edit this code?
