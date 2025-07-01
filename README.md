@@ -60,6 +60,13 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Where is the data stored?
+
+This version of the app keeps all media information in the browser using
+`localStorage`. The initial dataset lives in `src/data/mediaData.ts`. Since no
+database is required, you can host the built files on any static hosting
+provider.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/b862c4ab-9476-46a3-b598-02ad0f982bfc) and click on Share -> Publish.
